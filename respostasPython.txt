@@ -1,0 +1,178 @@
+QUESTÃO 1: Contar quantas linhas existem no log
+ENTRADA (Python):
+with open("sistema.log") as f:
+    linhas = f.readlines()
+print("Total de linhas:", len(linhas))
+
+SAÍDA:
+Total de linhas: 14
+
+------------------------------------------------------------
+
+QUESTÃO 2: Listar todas as tentativas de login bem-sucedidas (Accepted password)
+ENTRADA (Python):
+with open("sistema.log") as f:
+    for linha in f:
+        if "Accepted password" in linha:
+            print(linha.strip())
+
+SAÍDA:
+Mar 07 10:15:32 server1 sshd[1024]: Accepted password for user1 from 192.168.1.10 port 54321 ssh2
+Mar 07 10:20:05 server1 sshd[1060]: Accepted password for admin from 192.168.1.12 port 54789 ssh2
+Mar 07 10:40:22 server1 sshd[1138]: Accepted password for user5 from 192.168.1.16 port 55100 ssh2
+
+------------------------------------------------------------
+
+QUESTÃO 3: Listar apenas os endereços IP das conexões SSH
+ENTRADA (Python):
+import re
+with open("sistema.log") as f:
+    for linha in f:
+        if "sshd" in linha and "from" in linha:
+            match = re.search(r'from ([\\d\\.]+)', linha)
+            if match:
+                print(match.group(1))
+
+SAÍDA:
+192.168.1.10
+192.168.1.11
+192.168.1.12
+192.168.1.14
+192.168.1.15
+192.168.1.16
+
+------------------------------------------------------------
+
+QUESTÃO 4: Filtrar apenas as falhas de login no SSH (Failed password)
+ENTRADA (Python):
+with open("sistema.log") as f:
+    for linha in f:
+        if "Failed password" in linha:
+            print(linha.strip())
+
+SAÍDA:
+Mar 07 10:18:07 server1 sshd[1055]: Failed password for user2 from 192.168.1.11 port 54632 ssh2
+Mar 07 10:25:50 server1 sshd[1101]: Failed password for root from 192.168.1.14 port 54987 ssh2
+Mar 07 10:33:05 server1 sshd[1125]: Failed password for user4 from 192.168.1.15 port 55023 ssh2
+
+------------------------------------------------------------
+
+QUESTÃO 5: Listar quantos logins bem-sucedidos e quantos falharam
+ENTRADA (Python):
+with open("sistema.log") as f:
+    linhas = f.readlines()
+sucessos = sum(1 for l in linhas if "Accepted password" in l)
+falhas = sum(1 for l in linhas if "Failed password" in l)
+print("Sucessos:", sucessos)
+print("Falhas:", falhas)
+
+SAÍDA:
+Sucessos: 3
+Falhas: 3
+
+------------------------------------------------------------
+
+QUESTÃO 6: Mostrar os usuários que executaram comandos com sudo
+ENTRADA (Python):
+import re
+with open("sistema.log") as f:
+    for linha in f:
+        if "sudo" in linha:
+            match = re.search(r'sudo\\[\\d+\\]: (\\w+)', linha)
+            if match:
+                print(match.group(1))
+
+SAÍDA:
+user3
+user2
+
+------------------------------------------------------------
+
+QUESTÃO 7: Ordenar os logs por ordem de horário
+ENTRADA (Python):
+import re
+from datetime import datetime
+def extrair_data(linha):
+    match = re.match(r"(\\w{3} \\d{2}) (\\d{2}:\\d{2}:\\d{2})", linha)
+    if match:
+        return datetime.strptime(match.group(1) + " " + match.group(2), "%b %d %H:%M:%S")
+    return datetime.min
+with open("sistema.log") as f:
+    linhas = [linha.strip() for linha in f]
+ordenado = sorted(linhas, key=extrair_data)
+for linha in ordenado:
+    print(linha)
+
+SAÍDA:
+Mar 07 10:15:32 server1 sshd[1024]: Accepted password for user1 from 192.168.1.10 port 54321 ssh2
+Mar 07 10:16:45 server1 systemd[1]: Started Apache Web Server.
+Mar 07 10:17:01 server1 cron[2048]: (root) CMD (/usr/bin/backup.sh)
+Mar 07 10:18:07 server1 sshd[1055]: Failed password for user2 from 192.168.1.11 port 54632 ssh2
+Mar 07 10:19:30 server1 systemd[1]: Stopped Apache Web Server.
+Mar 07 10:20:05 server1 sshd[1060]: Accepted password for admin from 192.168.1.12 port 54789 ssh2
+Mar 07 10:22:15 server1 sudo[1084]: user3 : TTY=pts/0 ; PWD=/home/user3 ; USER=root ; COMMAND=/bin/ls
+Mar 07 10:25:50 server1 sshd[1101]: Failed password for root from 192.168.1.14 port 54987 ssh2
+Mar 07 10:30:12 server1 systemd[1]: Started MySQL Database Server.
+Mar 07 10:31:34 server1 cron[2111]: (root) CMD (/usr/bin/cleanup.sh)
+Mar 07 10:33:05 server1 sshd[1125]: Failed password for user4 from 192.168.1.15 port 55023 ssh2
+Mar 07 10:40:22 server1 sshd[1138]: Accepted password for user5 from 192.168.1.16 port 55100 ssh2
+Mar 07 10:45:50 server1 systemd[1]: Stopped MySQL Database Server.
+Mar 07 10:50:30 server1 sudo[1156]: user2 : TTY=pts/1 ; PWD=/home/user2 ; USER=root ; COMMAND=/bin/cat /var/log/auth.log
+
+------------------------------------------------------------
+
+QUESTÃO 8: Identificar quais usuários tentaram logar e falharam mais de uma vez
+ENTRADA (Python):
+import re
+from collections import Counter
+with open("sistema.log") as f:
+    linhas = f.readlines()
+usuarios = [re.search(r"Failed password for (\\w+)", l).group(1) for l in linhas if "Failed password" in l]
+contagem = Counter(usuarios)
+for usuario, qtd in contagem.items():
+    if qtd > 1:
+        print(f"{usuario}: {qtd}")
+
+SAÍDA:
+(nenhum usuário com múltiplas falhas)
+
+------------------------------------------------------------
+
+QUESTÃO 9: Extrair apenas os comandos executados via sudo
+ENTRADA (Python):
+import re
+with open("sistema.log") as f:
+    for linha in f:
+        if "sudo" in linha:
+            match = re.search(r"COMMAND=(.*)", linha)
+            if match:
+                print(match.group(1))
+
+SAÍDA:
+/bin/ls
+/bin/cat /var/log/auth.log
+
+------------------------------------------------------------
+
+QUESTÃO 10: Contar quantas conexões SSH vieram de cada endereço IP
+ENTRADA (Python):
+import re
+from collections import Counter
+ips = []
+with open("sistema.log") as f:
+    for linha in f:
+        if "sshd" in linha and "from" in linha:
+            match = re.search(r"from ([\\d\\.]+)", linha)
+            if match:
+                ips.append(match.group(1))
+contagem = Counter(ips)
+for ip, qtd in contagem.most_common():
+    print(f"{ip}: {qtd}")
+
+SAÍDA:
+192.168.1.10: 1
+192.168.1.11: 1
+192.168.1.12: 1
+192.168.1.14: 1
+192.168.1.15: 1
+192.168.1.16: 1
